@@ -3,7 +3,7 @@ const amqp = require('amqplib/callback_api')
 const RABBIT_HOST = process.env.RABBIT_HOST || 'localhost'
 let amqpConn = null
 
-function createRabbitMQChannels (queue, cb = () => {}) {
+function createRabbitMQChannels(queue, cb = () => { }) {
   amqp.connect(`amqp://${RABBIT_HOST}`, function (err, conn) {
     if (err) {
       console.error('::: AMQP ERROR :::', err.message)
@@ -26,14 +26,14 @@ function createRabbitMQChannels (queue, cb = () => {}) {
   })
 }
 
-function whenConnected (queue, cb) {
+function whenConnected(queue, cb) {
   startPublisher()
   startWorker(queue, cb)
 }
 
 let pubChannel = null
 const offlinePubQueue = []
-function startPublisher () {
+function startPublisher() {
   amqpConn.createConfirmChannel(function (err, ch) {
     if (closeOnErr(err)) return
     ch.on('error', function (err) {
@@ -53,7 +53,7 @@ function startPublisher () {
 }
 
 // method to publish a message, will queue messages internally if the connection is down and resend later
-function publish (exchange, routingKey, content) {
+function publish(exchange, routingKey, content) {
   try {
     return pubChannel.publish(exchange, routingKey, content, { persistent: true },
       function (err, ok) {
@@ -74,7 +74,7 @@ function publish (exchange, routingKey, content) {
 }
 
 // A worker that acknowledges messages only if processed successfully
-function startWorker (queue, cb) {
+function startWorker(queue, cb) {
   amqpConn.createChannel(function (err, ch) {
     if (closeOnErr(err)) return
     ch.on('error', function (err) {
@@ -94,7 +94,7 @@ function startWorker (queue, cb) {
     //   ch.consume(queue, processMsg, { noAck: false })
     //   console.log(`::: AMQP WORKER STARTED FOR QUEUE ${queue} :::`)
     // })
-    async function processMsg (msg) {
+    async function processMsg(msg) {
       try {
         const success = work(msg)
         if (success) ch.ack(msg)
@@ -104,7 +104,7 @@ function startWorker (queue, cb) {
       }
     }
 
-    function work (msg) {
+    function work(msg) {
       try {
         cb(msg)
         console.log(msg.content.toString())
@@ -117,14 +117,14 @@ function startWorker (queue, cb) {
   })
 }
 
-function closeOnErr (err) {
+function closeOnErr(err) {
   if (!err) return false
   console.error('::: AMQP ERROR. AMQP CLOSING :::', err)
   amqpConn.close()
   return true
 }
 
-function publishMessage (message, routingKey) {
+function publishMessage(message, routingKey) {
   return publish('', routingKey, Buffer.from(message))
 }
 
